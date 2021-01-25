@@ -3,12 +3,16 @@ const admin = require('firebase-admin');
 const moment = require('moment');
 
 const express = require('express');
+const cors = require('cors')
 const app = express();
 
 admin.initializeApp();
 
 const db = admin.firestore();
 const ticketsCollection = db.collection("tickets");
+const cardsCollection = db.collection("cardprojects");
+
+app.use(cors());
 
 app.get('/', (req, res, next) => {
     res.send('Welcome')
@@ -26,6 +30,29 @@ app.post('/api/createticket', async (req, res) => {
         }
 
         await ticketsCollection.add(ticket);
+        res.status(200).json();
+
+    }
+    catch (err) {
+        return res.json(err)
+    }
+});
+
+app.post('/api/addcard', async (req, res) => {
+    try {
+        let cards = {
+            "imgurl": req.body.imgurl,
+            "title": req.body.title,
+            "subtitle": req.body.subtitle,
+            "text": req.body.text,
+            "Link1D":req.body.Link1D,
+            "Link1": req.body.Link1,
+            "Link2D": req.body.Link2D,
+            "Link2": req.body.Link2,
+            "create_date" : new Date()
+        }
+
+        await cardsCollection.add(cards);
         res.status(200).json();
 
     }
@@ -62,8 +89,28 @@ app.get('/api/ticketlist', (req, res,) => {
     catch (err) {
         return res.json(err)
     }
+});
 
-
+app.get('/api/cardlist', (req, res,) => {
+    try {
+        let allCard = [];
+        cardsCollection.orderBy("create_date", "asc").get().then(async snapshot => {
+            await snapshot.forEach(doc => {
+                allCard.push(doc.data())
+            })
+            return res.json({
+                "statuscode": 200,
+                "message": "OK",
+                "data": allCard,
+            })
+        })
+            .catch(err => {
+                console.log('error', err);
+            })
+    }
+    catch (err) {
+        return res.json(err)
+    }
 });
 
 app.post('/api/ticketByFilter', (req, res,) => {
